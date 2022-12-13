@@ -1,0 +1,158 @@
+import numpy as np
+
+# Leer archivo .txt
+
+my_file = open("nodos.txt", "r")
+data = my_file.read()
+lines = data.split("\n")
+my_file.close()
+
+
+#Definir clases para representar un grafo en python
+
+class Vertex:
+  def __init__(self, key):
+      self.key = key
+      self.adjacents = dict()
+
+  def add_neighbour(self, node, dist):
+      self.adjacents[node] = dist
+
+  def get_neighbours(self):
+      return self.adjacents.keys()
+
+  def get_weight(self, node):
+      return self.adjacents[node]
+
+  def is_adjacent(self, node):
+      """Return True if this vertex is adjacent to node."""
+      if node in self.adjacents.keys():
+        return True
+      else:
+        return False
+
+
+class Graph:
+  def __init__(self):
+    self.V = {}
+ 
+  def add_vertex(self, key):
+      vertex = Vertex(key)
+      self.V[key] = vertex
+
+  def get_vertex(self, key):
+      return self.V[key]
+
+  def node_in_graph(self, key):
+      return key in self.V
+
+  def add_edge(self, node1, node2, dist):
+      self.V[node1].add_neighbour(self.V[node2], dist)
+
+  def is_adjacent(self, node1, node2):
+      return self.V[node1].is_adjacent(self.V[node2])
+  
+  def get_pairs(self):
+    res = []
+    final_dist = 0
+    done = []
+    for node in self.V.values():
+      neighbours = node.get_neighbours()
+      for neighbour in neighbours:
+        if neighbour not in done:
+          dist = node.get_weight(neighbour)
+          res += [[node.key,neighbour.key,dist]]
+          final_dist += dist
+      done += [node]
+    return res, final_dist
+
+
+
+# Implementacion del agoritmo de Prim
+
+def prim(G):
+
+    res = Graph()
+
+    nearest_neighbour = {}
+    smallest_distance = {}
+
+    unvisited = set(G.V.values())
+ 
+    temp = list(G.V.values())[0]
+    res.add_vertex(temp.key)
+    unvisited.remove(temp)
+ 
+    for node in temp.get_neighbours():
+        if node is temp:
+            continue
+        nearest_neighbour[node] = res.get_vertex(temp.key)
+        smallest_distance[node] = temp.get_weight(node)
+ 
+    while (smallest_distance):
+        
+        # get nearest vertex outside the MST
+        outside = min(smallest_distance, key=smallest_distance.get)
+        
+        # get the nearest neighbour inside the MST
+        inside = nearest_neighbour[outside]
+ 
+        # add a copy of the outside vertex to the MST
+        res.add_vertex(outside.key)
+        # add the edge to the MST
+        res.add_edge(outside.key, inside.key, smallest_distance[outside])
+        res.add_edge(inside.key, outside.key, smallest_distance[outside])
+ 
+        unvisited.remove(outside)
+        del smallest_distance[outside]
+        del nearest_neighbour[outside]
+ 
+        for node in outside.get_neighbours():
+            if node in unvisited:
+                if node not in smallest_distance:
+                    smallest_distance[node] = outside.get_weight(node)
+                    nearest_neighbour[node] = res.get_vertex(outside.key)
+                else:
+                    if smallest_distance[node] > outside.get_weight(node):
+                        smallest_distance[node] = outside.get_weight(node)
+                        nearest_neighbour[node] = res.get_vertex(outside.key)
+ 
+    return res
+
+
+# Crear el grafo a partir del .txt
+
+def grafo_from_txt(lines):
+
+  graph = Graph()
+
+  for line in lines:
+
+    line = line.split(']')
+
+    a = (line[0]).strip(' []')
+    b = (line[1]).strip(' []')
+    distancia = int((line[2]).strip(' []'))
+
+    if not graph.node_in_graph(a):
+      graph.add_vertex(a)
+
+    if not graph.node_in_graph(b):
+      graph.add_vertex(b)
+
+    graph.add_edge(a, b, distancia)
+    graph.add_edge(b, a, distancia)
+
+  return graph
+
+
+# Resultado
+
+
+grafo = grafo_from_txt(lines)
+Prim = prim(grafo)
+
+trajectory, distance = Prim.get_pairs()
+
+print('Grafo : ' , trajectory)
+print('Distancia total : ' , distance, ' metros')
